@@ -1,39 +1,46 @@
 # Define password (change this to your desired password)
-$password = "Password"
+$password = "YourSecurePassword"
 
-# Check if a directory path was provided as an argument
+# Check if a text file with folder paths was provided
 if (-not $args[0]) {
-    Write-Host "Usage: EncryptDirectory.ps1 <directory_path>" -ForegroundColor Red
+    Write-Host "Usage: EncryptFoldersFromList.ps1 <path_to_folder_list.txt>" -ForegroundColor Red
     exit
 }
 
-$targetDir = $args[0]
+$folderListFile = $args[0]
 
-# Validate the directory exists
-if (-not (Test-Path -Path $targetDir -PathType Container)) {
-    Write-Host "Error: Directory does not exist: $targetDir" -ForegroundColor Red
+# Validate that the list file exists
+if (-not (Test-Path -Path $folderListFile -PathType Leaf)) {
+    Write-Host "Error: Folder list file not found: $folderListFile" -ForegroundColor Red
     exit
 }
 
-# Get all files in the specified directory (add -Recurse to include subfolders)
-$files = Get-ChildItem -Path $targetDir -File
+# Read all folder paths from the text file
+$folderPaths = Get-Content -Path $folderListFile | Where-Object { $_ -ne "" }
 
-foreach ($file in $files) {
-    # Skip the script itself if it's inside the target directory
-    if ($file.Name -eq "EncryptDirectory.ps1" -or $file.Name -eq "EncryptAll.ps1") {
-        Write-Host "Skipping script file: $($file.Name)"
+foreach ($folder in $folderPaths) {
+    # Validate folder exists
+    if (-not (Test-Path -Path $folder -PathType Container)) {
+        Write-Host "Folder does not exist, skipping: $folder" -ForegroundColor Yellow
         continue
     }
 
-    Write-Host "Encrypting file: $($file.FullName)"
+    Write-Host "`nProcessing folder: $folder" -ForegroundColor Green
 
-    # Run AESCrypt to encrypt the file
-    & aescrypt.exe -e $file.FullName -p $password
+    # Get all files in the folder (add -Recurse below to include subfolders)
+    $files = Get-ChildItem -Path $folder -File
 
-    # Optional: Check for success/error
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Successfully encrypted: $($file.Name)`n"
-    } else {
-        Write-Host "Failed to encrypt: $($file.Name). Error code: $LASTEXITCODE`n" -ForegroundColor Red
+    foreach ($file in $files) {
+        Write-Host "Encrypting file: $($file.FullName)"
+
+        # Run AESCrypt to encrypt the file
+        & aescrypt.exe -e $file.FullName -p $password
+
+        # Optional: Check for success/error
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✅ Successfully encrypted: $($file.Name)`n"
+        } else {
+            Write-Host "❌ Failed to encrypt: $($file.Name). Error code: $LASTEXITCODE`n" -ForegroundColor Red
+        }
     }
 }
